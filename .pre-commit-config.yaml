@@ -1,0 +1,35 @@
+repos:
+  - repo: local
+    hooks:
+    - id: mypy_datatool
+      stages: [pre-commit]
+      name: mypy_datatool
+      entry: uv run mypy ./src/datatool/
+      pass_filenames: false
+      language: python
+      types:
+      - python
+    - id: mypy_tests
+      stages: [pre-commit]
+      name: mypy_tests
+      entry: uv run mypy ./tests/
+      pass_filenames: false
+      language: python
+      types:
+      - python
+    - id: ruff_check
+      stages: [pre-commit]
+      name: ruff_check
+      entry: uv run ruff check --fix --exit-non-zero-on-fix
+      language: python
+      pass_filenames: false
+      types:
+      - python
+    - id: ruff_format
+      stages: [pre-commit]
+      name: ruff_format
+      entry: uv run ruff format
+      language: python
+      pass_filenames: false
+      types:
+      - python

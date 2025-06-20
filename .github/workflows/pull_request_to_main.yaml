@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Add uv to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Create virtual environment
+        run: uv venv
+
+      - name: Activate virtual environment
+        run: source .venv/bin/activate
+
+      - name: Install dependencies
+        run: uv pip install -e .
+
+      - name: Install pytest
+        run: uv pip install pytest
+
+      - name: Run pytest
+        run: uv run pytest tests/

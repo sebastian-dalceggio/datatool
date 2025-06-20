@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[project]
+name = "datatool"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cloudpathlib[azure,gs,s3]>=0.21.1",
+    "pendulum>=3.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.16.0",
+    "pdbpp>=0.11.6",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.0",
+    "pytest-mock>=3.14.1",
+    "ruff>=0.11.13",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["./src"]

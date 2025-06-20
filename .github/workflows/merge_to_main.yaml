@@ -1,0 +1,47 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install toml
+        run: pip install toml
+
+      - name: Extract Version
+        id: extract_version
+        run: |
+          # VERSION=$(jq -r '.project.version' pyproject.toml) # Use jq
+          # Alternative using python:
+          python -c "import toml; data = toml.load('pyproject.toml'); print(data['project']['version'])" > version.txt
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Local Tag
+        id: create_tag
+        run: |
+          git tag v${{ steps.extract_version.outputs.VERSION }} || echo "Tag already exists"
+          echo "TAG_CREATED=$(if [[ $? -eq 0 ]]; then echo 'true'; else echo 'false'; fi)" >> $GITHUB_OUTPUT
+  
+      - name: Push Tag
+        if: steps.create_tag.outputs.TAG_CREATED == 'true'
+        run: git push origin refs/tags/v${{ steps.extract_version.outputs.VERSION }}
+  

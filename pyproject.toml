@@ -7,12 +7,13 @@ include-package-data = true
 
 [project]
 name = "datatool"
-version = "0.1.0"
+version = "0.1.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "cloudpathlib[azure,gs,s3]>=0.21.1",
+    "paramiko>=3.5.1",
     "pendulum>=3.1.0",
 ]
 
@@ -24,6 +25,7 @@ dev = [
     "pytest>=8.4.0",
     "pytest-mock>=3.14.1",
     "ruff>=0.11.13",
+    "types-paramiko>=3.5.0.20250516",
 ]
 
 [tool.pytest.ini_options]

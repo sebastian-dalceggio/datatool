@@ -10,8 +10,8 @@ Below is a list of the primary test cases organized by the modules they cover:
 
 -   `test_file_initialization_relative_path_str`: Verifies `File` initialization with a relative string path.
 -   `test_file_initialization_relative_pathtype`: Verifies `File` initialization with a relative `Path` object.
--   `test_file_initialization_absolute_path_str`: Verifies `File` initialization with an absolute string path (local or cloud).
--   `test_file_initialization_absolute_pathtype`: Verifies `File` initialization with an absolute `Path` object (local or cloud).
+-   `test_file_initialization_absolute_path_str`: Verifies `File` initialization with an absolute string path (local, cloud, or SSH).
+-   `test_file_initialization_absolute_pathtype`: Verifies `File` initialization with an absolute `Path` object (local, cloud, or SSH).
 -   `test_file_save`: Tests the `save` method for `File` objects, including content handling and directory creation.
 -   `test_file_save_no_content_error`: Ensures `save` raises an error when no content is available.
 -   `test_file_read`: Tests the `read` method for `File` objects, including content caching.
@@ -21,18 +21,25 @@ Below is a list of the primary test cases organized by the modules they cover:
 
 ### `tests/tools/test_file_transfer_manager.py`
 
--   `test_transfer_local_to_local`: Tests file transfer from a local path to another local path.
--   `test_transfer_local_to_cloud`: Tests file transfer from a local path to a cloud path.
--   `test_transfer_cloud_to_local`: Tests file transfer from a cloud path to a local path.
--   `test_transfer_cloud_to_cloud`: Tests file transfer between two different cloud paths.
+-   `test_transfer_file_dispatches_correctly`: Tests that `FileTransferManager` dispatches to the correct strategy based on source and target path types (local, cloud, SSH).
 -   `test_transfer_file_with_delete_source`: Verifies that the source file is deleted after transfer when specified.
 -   `test_transfer_file_unsupported_types`: Checks that `TypeError` is raised for unsupported path type combinations during transfer.
 -   `test_transfer_file_exception_handling`: Ensures exceptions from underlying file operations are propagated and logged.
+-   `test_local_to_local_strategy`: Tests the `LocalToLocalStrategy` for copying local files.
+-   `test_local_to_cloud_strategy`: Tests the `LocalToCloudStrategy` for uploading local files to cloud storage.
+-   `test_cloud_to_local_strategy`: Tests the `CloudToLocalStrategy` for downloading cloud objects to local files.
+-   `test_cloud_to_cloud_strategy`: Tests the `CloudToCloudStrategy` for copying objects between cloud storage providers.
+-   `test_local_to_ssh_strategy`: Tests the `LocalToSshStrategy` for uploading local files to an SSH server.
+-   `test_ssh_to_local_strategy`: Tests the `SshToLocalStrategy` for downloading files from an SSH server to local.
+-   `test_ssh_to_cloud_strategy`: Tests the `SshToCloudStrategy` for transferring files from an SSH server to cloud storage.
+-   `test_cloud_to_ssh_strategy`: Tests the `CloudToSshStrategy` for transferring files from cloud storage to an SSH server.
+-   `test_ssh_to_ssh_strategy`: Tests the `SshToSshStrategy` for transferring files between two SSH servers.
 
 ### `tests/tools/test_paths.py`
 
 -   `test_get_path_from_str_local`: Tests `get_path_from_str` for local file paths.
 -   `test_get_path_from_str_cloud`: Tests `get_path_from_str` for various cloud file paths (S3, GS, Azure Blob).
+-   `test_get_path_from_str_ssh`: Tests `get_path_from_str` for SSH paths.
 -   `test_get_path_from_str_empty`: Tests `get_path_from_str` with an empty string input.
 
 ### `tests/test_config.py`

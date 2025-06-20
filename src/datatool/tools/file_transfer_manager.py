@@ -1,15 +1,29 @@
 """
 Manages file transfer operations between local and cloud storage.
 Provides a unified interface for copying, uploading, and downloading files.
+Now refactored to use the Strategy Pattern for extensibility.
 """
 
 from pathlib import Path
-import shutil
 
 from cloudpathlib import CloudPath
 
 from datatool.config import Config
+from datatool.types import PathType
 from datatool.tools.files import File
+from datatool.tools.ssh_path import SshPath
+from datatool.tools.transfer_strategies import (
+    TransferStrategy,
+    LocalToLocalStrategy,
+    LocalToCloudStrategy,
+    CloudToLocalStrategy,
+    CloudToCloudStrategy,
+    LocalToSshStrategy,
+    SshToLocalStrategy,
+    SshToCloudStrategy,
+    CloudToSshStrategy,
+    SshToSshStrategy,
+)
 
 
 class FileTransferManager:
@@ -25,70 +39,40 @@ class FileTransferManager:
             config: The configuration object to be used for logging and other settings.
         """
         self.config = config
+        self._strategies: dict[tuple[type, type], TransferStrategy] = {
+            (Path, Path): LocalToLocalStrategy(),
+            (Path, CloudPath): LocalToCloudStrategy(),
+            (CloudPath, Path): CloudToLocalStrategy(),
+            (CloudPath, CloudPath): CloudToCloudStrategy(),
+            (Path, SshPath): LocalToSshStrategy(),
+            (SshPath, Path): SshToLocalStrategy(),
+            (SshPath, CloudPath): SshToCloudStrategy(),
+            (CloudPath, SshPath): CloudToSshStrategy(),
+            (SshPath, SshPath): SshToSshStrategy(),
+        }
 
-    def _transfer_local_to_local(self, source_path: Path, target_path: Path) -> None:
+    def _get_base_path_type(self, path_instance: PathType) -> type:
         """
-        Copies a file from a local path to another local path.
-
-        Args:
-            source_path: The local path of the source file.
-            target_path: The local path for the target file.
+        Determines the base type for a path instance for strategy lookup.
+        This handles subclasses like S3Path mapping to CloudPath.
         """
-        self.config.logger.debug(
-            f"Executing local to local copy: {source_path} -> {target_path}"
-        )
-        shutil.copy(source_path, target_path)
-
-    def _transfer_local_to_cloud(
-        self, source_path: Path, target_path: CloudPath
-    ) -> None:
-        """
-        Uploads a local file to a cloud storage location.
-
-        Args:
-            source_path: The local path of the source file.
-            target_path: The cloud path for the target file.
-        """
-        self.config.logger.debug(
-            f"Executing local to cloud upload: {source_path} -> {target_path}"
-        )
-        target_path.upload_from(source_path)
-
-    def _transfer_cloud_to_cloud(
-        self, source_path: CloudPath, target_path: CloudPath
-    ) -> None:
-        """
-        Copies a file from one cloud storage location to another.
-
-        Args:
-            source_path: The cloud path of the source file.
-            target_path: The cloud path for the target file.
-        """
-        self.config.logger.debug(
-            f"Executing cloud to cloud copy: {source_path} -> {target_path}"
-        )
-        source_path.copy(target_path)
-
-    def _transfer_cloud_to_local(
-        self, source_path: CloudPath, target_path: Path
-    ) -> None:
-        """
-        Downloads a file from a cloud storage location to a local path.
-
-        Args:
-            source_path: The cloud path of the source file.
-            target_path: The local path for the target file.
-        """
-        self.config.logger.debug(
-            f"Executing cloud to local download: {source_path} -> {target_path}"
-        )
-        source_path.download_to(target_path)
+        if isinstance(path_instance, SshPath):
+            return SshPath
+        # CloudPath must be checked before Path, as CloudPath is a subclass of Path
+        if isinstance(path_instance, CloudPath):
+            return CloudPath
+        if isinstance(path_instance, Path):
+            return Path
+        # Fallback for unknown types
+        return type(path_instance)
 
     def transfer_file(
         self, source_file: File, target_file: File, delete_source: bool = False
     ) -> None:
         """
         Transfers a file from a source to a target, optionally deleting the source.
+        This method now uses a strategy pattern to dispatch to the correct transfer
+        logic based on the source and target path types.
 
         Args:
             source_file: The File object representing the source.
@@ -109,20 +93,18 @@ class FileTransferManager:
         source_path = source_file.path
         target_path = target_file.path
 
+        # Ensure target parent directory exists for local paths.
+        # SshPath.write_bytes already handles directory creation.
         if isinstance(target_path, Path):
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            if isinstance(source_path, Path) and isinstance(target_path, Path):
-                self._transfer_local_to_local(source_path, target_path)
-            elif isinstance(source_path, Path) and isinstance(target_path, CloudPath):
-                self._transfer_local_to_cloud(source_path, target_path)
-            elif isinstance(source_path, CloudPath) and isinstance(target_path, Path):
-                self._transfer_cloud_to_local(source_path, target_path)
-            elif isinstance(source_path, CloudPath) and isinstance(
-                target_path, CloudPath
-            ):
-                self._transfer_cloud_to_cloud(source_path, target_path)
+            source_base_type = self._get_base_path_type(source_path)
+            target_base_type = self._get_base_path_type(target_path)
+
+            strategy = self._strategies.get((source_base_type, target_base_type))
+            if strategy:
+                strategy.transfer(source_path, target_path)
             else:
                 raise TypeError(
                     f"Unsupported path types for transfer: "

@@ -1,6 +1,39 @@
-# DataTool Package
+# DataTool
 
-The `datatool` package provides a set of utilities designed to simplify common data operations, particularly focusing on file management and transfer across different storage types (local and cloud). It aims to abstract away the complexities of underlying file system APIs, offering a unified and consistent interface.
+DataTool is a Python library designed to simplify and unify file operations across different storage backends, including local filesystems, cloud storage, and SSH/SFTP servers. It provides a consistent, high-level API for managing and transferring files, abstracting away the complexities of underlying protocols.
+
+## Key Features
+
+The core of DataTool revolves around a few key abstractions:
+
+*   **Unified Path Objects**: Handles local paths (`pathlib.Path`), cloud paths (`cloudpathlib.CloudPath`), and SSH paths (`SshPath`) through a consistent interface. The `get_path_from_str` utility automatically determines the correct path type from a string URI.
+
+*   **File Abstraction (`File`, `TextFile`)**: Provides a generic way to interact with files regardless of their location. It supports reading, writing, and in-memory content caching.
+
+*   **Flexible File Transfers (`FileTransferManager`)**: A powerful manager that uses a strategy pattern to transfer files between any supported storage types. This allows for seamless operations like:
+    *   Local to Local
+    *   Local to Cloud (S3, GCS, Azure Blob)
+    *   Cloud to Local
+    *   Cloud to Cloud (cross-provider)
+    *   Local to SSH
+    *   SSH to Local
+    *   Cloud to SSH
+    *   SSH to Cloud
+    *   SSH to SSH
+
+*   **Centralized Configuration (`Config`)**: Manages settings such as storage paths, logging, and date-based folder structures, providing a single source of truth for file operations.
+
+## Supported Actions
+
+DataTool supports a wide range of file manipulation and transfer actions:
+
+*   **Path Resolution**: Convert string paths (e.g., `/path/to/file`, `s3://bucket/key`, `ssh://user@host/path`) into appropriate `Path`-like objects.
+*   **File I/O**: Read and write content to and from local, cloud, or SSH locations with automatic caching.
+*   **File Transfer**: Copy files between any two locations with a single `transfer_file` call.
+*   **Source Deletion**: Optionally delete the source file after a successful transfer.
+*   **Directory Management**: Automatically create parent directories for local file writes.
+
+This combination of features makes DataTool an effective utility for building data pipelines and workflows that involve multiple storage systems.
 
 ## When is `datatool` useful?
 
@@ -23,4 +56,3 @@ While `datatool` offers significant advantages in many scenarios, it might not b
 -   **Direct `pathlib` or `cloudpathlib` feature reliance:** If your workflow heavily depends on specific, advanced features or direct object manipulation provided solely by `pathlib` or `cloudpathlib` that are not exposed or abstracted by `datatool`.
 
 In summary, `datatool` is designed to streamline common data handling tasks, particularly those involving diverse storage backends. Evaluate its fit based on your project's scale, performance requirements, and the complexity of your file interaction patterns.
-

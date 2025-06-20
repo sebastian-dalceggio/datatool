@@ -3,6 +3,7 @@ import re
 
 from cloudpathlib import CloudPath
 
+from datatool.tools.ssh_path import SshPath
 from datatool.types import PathType
 
 _CLOUD_PATH_REGEX = re.compile(r"^(s3://|gs://|az://)")
@@ -23,4 +24,6 @@ def get_path_from_str(path: str) -> PathType:
     """
     if _CLOUD_PATH_REGEX.match(path):
         return CloudPath(path)  # type: ignore[abstract]
+    elif path.startswith("ssh://"):
+        return SshPath(path)
     return Path(path)

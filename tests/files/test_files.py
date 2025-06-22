@@ -1,4 +1,4 @@
-"""Tests for the datatool.tools.files module."""
+"""Tests for the datatool.files.files module."""
 
 from pathlib import Path
 
@@ -7,7 +7,7 @@ from cloudpathlib import S3Path
 from pytest_mock.plugin import MockerFixture, MockType
 
 from datatool.config import Config
-from datatool.tools.files import File, TextFile
+from datatool.files.files import File, TextFile, BytesFile, JsonFile
 from datatool.types import PathType
 
 
@@ -84,6 +84,24 @@ def test_file_initialization_absolute_pathtype(mock_config: Config, tmp_path: Pa
     assert f.path == path_obj
     assert f.name == path_name_part, "Name should be derived from path"
     assert f.subdir == "", "Subdir should be empty when an absolute path is provided"
+
+
+def test_file_initialize_path_logic(mock_config: Config):
+    """Test the _initialize_path method's logic for absolute vs relative paths."""
+    # Test with a relative path_or_name and subdir
+    file_name = "relative.txt"
+    subdir = "test_subdir"
+    f = ConcreteFile(config=mock_config, path_or_name=file_name, subdir=subdir)
+    assert f.path == mock_config.get_file_storage_path(file_name, subdir)
+    assert f.name == file_name
+    assert f.subdir == subdir
+
+    # Test with an absolute PathType, subdir should be ignored and name derived from path
+    abs_path = Path("/absolute/path/to/file.txt")
+    f = ConcreteFile(config=mock_config, path_or_name=abs_path, subdir="ignored_subdir")
+    assert f.path == abs_path
+    assert f.name == "file.txt"
+    assert f.subdir == ""  # Should be empty for absolute paths
 
 
 def test_file_save(mock_config: Config, mock_path_obj: MockType):
@@ -170,3 +188,49 @@ def test_textfile_default_encoding(mock_config: Config, mock_path_obj: MockType)
 
     text_f._read(mock_path_obj)
     mock_path_obj.read_text.assert_called_once_with(encoding="utf-8")
+
+
+def test_bytesfile_save_and_read(mock_config: Config, mock_path_obj: MockType):
+    """Test BytesFile's _save and _read implementations."""
+    bytes_f = BytesFile(config=mock_config, path_or_name=mock_path_obj)
+
+    # Test _save
+    content_to_save = b"binary data"
+    bytes_f._save(content_to_save, mock_path_obj)
+    mock_path_obj.write_bytes.assert_called_once_with(content_to_save)
+
+    # Test _read
+    mock_path_obj.read_bytes.return_value = b"read binary data"
+    read_content = bytes_f._read(mock_path_obj)
+    mock_path_obj.read_bytes.assert_called_once()
+    assert read_content == b"read binary data"
+
+
+def test_jsonfile_save_and_read(
+    mock_config: Config, mock_path_obj: MockType, mocker: MockerFixture
+):
+    """Test JsonFile's _save and _read implementations."""
+    json_f = JsonFile(config=mock_config, path_or_name=mock_path_obj)
+    mock_json_dumps = mocker.patch("json.dumps", return_value='{"key": "value"}')
+    mock_json_loads = mocker.patch("json.loads", return_value={"key": "value"})
+
+    # Test _save
+    content_to_save = {"key": "value"}
+    json_f._save(content_to_save, mock_path_obj)
+    mock_json_dumps.assert_called_once_with(content_to_save, indent=4)
+    mock_path_obj.write_text.assert_called_once_with(
+        '{"key": "value"}', encoding="utf-8"
+    )
+
+    # Test _read
+    mock_path_obj.read_text.return_value = '{"key": "value"}'
+    read_content = json_f._read(mock_path_obj)
+    mock_path_obj.read_text.assert_called_once()
+    mock_json_loads.assert_called_once_with('{"key": "value"}')
+    assert read_content == {"key": "value"}
+
+
+def test_jsonfile_default_encoding(mock_config: Config, mock_path_obj: MockType):
+    """Test JsonFile uses utf-8 as default encoding."""
+    json_f = JsonFile(config=mock_config, path_or_name=mock_path_obj)
+    assert json_f.encoding == "utf-8"

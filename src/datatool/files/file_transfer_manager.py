@@ -10,9 +10,9 @@ from cloudpathlib import CloudPath
 
 from datatool.config import Config
 from datatool.types import PathType
-from datatool.tools.files import File
-from datatool.tools.ssh_path import SshPath
-from datatool.tools.transfer_strategies import (
+from datatool.files.files import File
+from datatool.paths.ssh_path import SshPath
+from datatool.files.transfer_strategies import (
     TransferStrategy,
     LocalToLocalStrategy,
     LocalToCloudStrategy,
@@ -29,14 +29,18 @@ from datatool.tools.transfer_strategies import (
 class FileTransferManager:
     """
     Manages file transfer operations between different storage types.
+
     It uses a central configuration object for logging and other settings.
+
+    Attributes:
+        config (Config): The configuration object for this manager.
     """
 
     def __init__(self, config: Config):
-        """
+        """Initializes the FileTransferManager.
 
         Args:
-            config: The configuration object to be used for logging and other settings.
+            config: The configuration object for logging and other settings.
         """
         self.config = config
         self._strategies: dict[tuple[type, type], TransferStrategy] = {
@@ -55,6 +59,12 @@ class FileTransferManager:
         """
         Determines the base type for a path instance for strategy lookup.
         This handles subclasses like S3Path mapping to CloudPath.
+
+        Args:
+            path_instance: The path instance to check.
+
+        Returns:
+            The base type of the path (e.g., Path, CloudPath, SshPath).
         """
         if isinstance(path_instance, SshPath):
             return SshPath
@@ -80,7 +90,6 @@ class FileTransferManager:
             delete_source: Whether to delete the source file after transfer.
 
         Raises:
-            ValueError: If source or target paths are not set in the File objects.
             TypeError: If path types are unsupported or incompatible for direct transfer.
             Exception: Other exceptions from underlying file operations.
         """

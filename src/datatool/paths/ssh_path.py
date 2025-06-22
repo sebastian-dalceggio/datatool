@@ -38,6 +38,16 @@ def get_ssh_client(
     Creates and caches a paramiko.SSHClient for a given connection.
     Authentication is attempted using the provided credentials,
     then user's default SSH keys, and SSH agent.
+
+    Args:
+        hostname: The SSH server hostname.
+        port: The SSH server port.
+        username: The username for authentication.
+        password: The password for authentication.
+        key_filename: The path to a private key file for authentication.
+
+    Returns:
+        A connected and authenticated `paramiko.SSHClient` instance.
     """
     client = paramiko.SSHClient()
     client.load_system_host_keys()
@@ -59,11 +69,31 @@ class SshPath:
     This class mimics a subset of the pathlib.Path interface.
 
     An SshPath is initialized with a URL, e.g., "ssh://user@host:port/path/to/file".
+
+    Attributes:
+        hostname (str): The SSH server hostname.
+        port (int): The SSH server port.
+        username (str | None): The username for authentication.
+        path (str): The absolute path to the file or directory on the remote server.
+
     """
 
     def __init__(
         self, url: str, password: str | None = None, private_key_path: str | None = None
     ):
+        """
+        Initializes an SshPath object.
+
+        Args:
+            url: The SSH URL, e.g., "ssh://user@host:port/path/to/file".
+            password: The password for authentication.
+            private_key_path: The path to the private key for
+                authentication.
+
+        Raises:
+            ValueError: If the URL scheme is not "ssh" or if the hostname is missing.
+        """
+
         parsed_url = urlparse(url)
         if parsed_url.scheme != "ssh":
             raise ValueError(f"Invalid SSH URL scheme: {parsed_url.scheme}")
@@ -148,7 +178,13 @@ class SshPath:
             return False
 
     def mkdir(self, parents: bool = False, exist_ok: bool = False) -> None:
-        """Create a directory. Corresponds to `path.parent.mkdir()`."""
+        """Create a directory. Corresponds to `pathlib.Path.mkdir()`.
+
+        Args:
+            parents: If True, also create any missing parent directories.
+            exist_ok: If True, do not raise an error if the directory already
+                exists.
+        """
         if not parents:
             self.sftp.mkdir(self.path)
             return
@@ -171,8 +207,14 @@ class SshPath:
             return f.read()
 
     def write_bytes(self, data: bytes) -> None:
-        """Write bytes to the remote file."""
-        self.mkdir(parents=True, exist_ok=True)  # Ensure parent directories exist
+        """Write bytes to the remote file.
+
+        Args:
+            data: The bytes to write.
+        """
+        self.parent.mkdir(
+            parents=True, exist_ok=True
+        )  # Ensure parent directories exist
         with self.sftp.open(self.path, "wb") as f:
             f.write(data)
 
@@ -203,7 +245,12 @@ class SshPath:
         self.write_bytes(data.encode(encoding, errors))
 
     def unlink(self, missing_ok: bool = False) -> None:
-        """Remove the remote file."""
+        """Remove the remote file.
+
+        Args:
+            missing_ok: If True, do not raise an error if the file does not
+                exist.
+        """
         try:
             self.sftp.remove(self.path)
         except FileNotFoundError:

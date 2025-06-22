@@ -3,12 +3,13 @@
 Provides an abstract base class `File` and concrete implementations like `TextFile`.
 """
 
-from typing import Generic, TypeVar
+import json
+from typing import Any, Generic, TypeVar
 from abc import ABC, abstractmethod
 
 from datatool.types import PathType
 from datatool.config import Config
-from datatool.tools.paths import get_path_from_str
+from datatool.paths.paths import get_path_from_str
 
 
 T = TypeVar("T")
@@ -40,8 +41,8 @@ class File(ABC, Generic[T]):
 
         Args:
             config: The configuration object.
-            path_or_name: An absolute path (local or cloud) as a string or PathType,
-                or a relative path/filename as a string.
+            path_or_name: An absolute path (local or cloud)
+                or a relative path/filename.
             content: Optional initial content for the file.
             subdir: The subdirectory to use if `path_or_name` is relative.
         """
@@ -89,7 +90,7 @@ class File(ABC, Generic[T]):
 
         Args:
             content: The content to save.
-            path: The PathType where the content should be saved.
+            path: The path where the content should be saved.
         """
 
     def save(self, content: T | None = None, clear_content: bool = True) -> None:
@@ -121,7 +122,7 @@ class File(ABC, Generic[T]):
         To be implemented by subclasses for specific file types.
 
         Args:
-            path: The PathType from which to read the content.
+            path: The path from which to read the content.
 
         Returns:
             The content read from the file.
@@ -132,8 +133,8 @@ class File(ABC, Generic[T]):
         """Reads the file content from its path, caching it in memory.
 
         Args:
-            use_cache: If True (default), returns cached content if available.
-                If False, forces a re-read from the source path.
+            use_cache: If True (default), returns cached content if
+                available. If False, forces a re-read from the source path.
 
         Returns:
             The content of the file.
@@ -171,11 +172,11 @@ class TextFile(File[str]):
 
         Args:
             config: The configuration object.
-            path_or_name: An absolute path (local or cloud) as a string or PathType,
-                or a relative path/filename as a string.
+            path_or_name: An absolute path or a relative
+                path/filename.
             content: Optional initial text content for the file.
-            subdir: The subdirectory to use if `path_or_name` is relative.
-            encoding: The text encoding to use for read/write operations.
+            subdir: The subdirectory for relative paths.
+            encoding: The text encoding to use.
         """
         self.encoding = encoding
         super().__init__(
@@ -190,7 +191,7 @@ class TextFile(File[str]):
 
         Args:
             content: The string content to save.
-            path: The PathType where the content should be saved.
+            path: The path where the content should be saved.
         """
         path.write_text(content, encoding=self.encoding)
 
@@ -198,9 +199,89 @@ class TextFile(File[str]):
         """Reads content from a text file.
 
         Args:
-            path: The PathType from which to read the content.
+            path: The path from which to read the content.
 
         Returns:
             The string content read from the file.
         """
         return path.read_text(encoding=self.encoding)
+
+
+class BytesFile(File[bytes]):
+    """A concrete implementation of File for handling binary files."""
+
+    def _save(self, content: bytes, path: PathType) -> None:
+        """Saves bytes content to a binary file.
+
+        Args:
+            content: The bytes content to save.
+            path: The path where the content should be saved.
+        """
+        path.write_bytes(content)
+
+    def _read(self, path: PathType) -> bytes:
+        """Reads content from a binary file.
+
+        Args:
+            path: The path from which to read the content.
+
+        Returns:
+            The bytes content read from the file.
+        """
+        return path.read_bytes()
+
+
+class JsonFile(File[Any]):
+    """A concrete implementation of File for handling JSON files.
+
+    Attributes:
+        encoding (str): The character encoding for reading/writing (defaults to "utf-8").
+    """
+
+    def __init__(
+        self,
+        config: Config,
+        path_or_name: PathType | str,
+        content: Any | None = None,
+        subdir: str = "",
+        encoding: str = "utf-8",
+    ) -> None:
+        """Initializes a JsonFile object.
+
+        Args:
+            config: The configuration object.
+            path_or_name: An absolute path or a relative
+                path/filename.
+            content: Optional initial JSON-serializable content.
+            subdir: The subdirectory for relative paths.
+            encoding: The text encoding to use.
+        """
+        self.encoding = encoding
+        super().__init__(
+            config=config,
+            path_or_name=path_or_name,
+            content=content,
+            subdir=subdir,
+        )
+
+    def _save(self, content: Any, path: PathType) -> None:
+        """Saves JSON-serializable content to a file.
+
+        Args:
+            content: The JSON-serializable content to save.
+            path: The path where the content should be saved.
+        """
+        json_string = json.dumps(content, indent=4)
+        path.write_text(json_string, encoding=self.encoding)
+
+    def _read(self, path: PathType) -> Any:
+        """Reads JSON content from a file.
+
+        Args:
+            path: The path from which to read the content.
+
+        Returns:
+            The deserialized JSON content.
+        """
+        json_string = path.read_text(encoding=self.encoding)
+        return json.loads(json_string)

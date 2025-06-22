@@ -6,7 +6,7 @@ from pathlib import Path
 
 from cloudpathlib import CloudPath
 
-from datatool.tools.ssh_path import SshPath
+from datatool.paths.ssh_path import SshPath
 
 
 PathType = Path | CloudPath | SshPath

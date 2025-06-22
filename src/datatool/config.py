@@ -10,7 +10,7 @@ from pathlib import Path
 import pendulum
 
 from datatool.types import PathType
-from datatool.tools.paths import get_path_from_str
+from datatool.paths.paths import get_path_from_str
 from datatool.utils.logger import get_logger
 from datatool.utils.datetime import get_datetime_from_str
 
@@ -28,7 +28,7 @@ class Config:
         datetime (pendulum.DateTime): The current datetime for the process.
         process_name (str | None): The name of the current process.
         logger (logging.Logger): Logger instance for the application.
-        storage_parent_path (PathType | str): The base cloud path for storing files.
+        storage_parent_path (PathType): The base path for storing files (local, cloud, or SSH).
         storage_folder_fmt (str): The format string for creating date-based subfolders.
         storage_folders (str): The formatted string representing date-based subfolders.
         environment (Literal["dev", "test", "prod"]): The deployment environment.
@@ -37,7 +37,7 @@ class Config:
     def __init__(
         self,
         storage_parent_path: PathType | str,
-        datetime: pendulum.DateTime | str = pendulum.now(),
+        datetime: pendulum.DateTime | str | None = None,
         datetime_fmt: str = "YYYY-MM-DD HH:mm:ss+00:00",
         process_name: str | None = None,
         log_file_path: Path | str | None = None,
@@ -48,27 +48,36 @@ class Config:
         """Initializes the Config object.
 
         Args:
-            storage_parent_path: The base cloud path for storing files.
-            datetime: The datetime for the process, can be a pendulum.DateTime
-                object or a string. Defaults to current time.
+            storage_parent_path: The base path for storing files.
+            datetime: The datetime for the
+                process. Can be a pendulum.DateTime, a string, or None.
+                If None, it defaults to the current time.
             datetime_fmt: The format string for datetime objects.
             process_name: The name of the current process.
             log_file_path: Path to the log file.
             stream: IO stream for logging.
-            storage_folder_fmt: Format string for date-based subfolders.
+            storage_folder_fmt: Format string for date-based
+                subfolders.
             environment: The deployment environment ('dev', 'test', 'prod').
+
+        Raises:
+            TypeError: If `datetime` or `storage_parent_path` have an invalid type.
         """
 
         self.datetime_fmt = datetime_fmt
-        if datetime:
-            if isinstance(datetime, pendulum.DateTime):
-                self.datetime = datetime
-            elif isinstance(datetime, str):
-                self.datetime = get_datetime_from_str(datetime, self.datetime_fmt)
-            else:
-                raise TypeError(
-                    f"{datetime} should be pendulum.DateTime or str. Got {type(datetime)}"
-                )
+        effective_datetime = datetime
+        if effective_datetime is None:
+            effective_datetime = pendulum.now()
+
+        if isinstance(effective_datetime, pendulum.DateTime):
+            self.datetime = effective_datetime
+        elif isinstance(effective_datetime, str):
+            self.datetime = get_datetime_from_str(effective_datetime, self.datetime_fmt)
+        else:
+            raise TypeError(
+                "datetime should be pendulum.DateTime, str, or None. "
+                f"Got {type(effective_datetime)}"
+            )
         self.process_name = process_name
         if log_file_path or stream:
             self.logger = get_logger(
@@ -82,7 +91,8 @@ class Config:
             self.storage_parent_path = get_path_from_str(storage_parent_path)
         else:
             raise TypeError(
-                f"{storage_parent_path} should be PathType or str. Got {type(storage_parent_path)}"
+                "storage_parent_path should be PathType or str. "
+                f"Got {type(storage_parent_path)}"
             )
         self.storage_folder_fmt = storage_folder_fmt
         self.storage_folders = f"{self.datetime.format(self.storage_folder_fmt)}"
@@ -106,7 +116,7 @@ class Config:
             subdir: The subdirectory within the storage structure (e.g., "raw", "processed").
 
         Returns:
-            The fully constructed PathType (Path or CloudPath) for the file.
+            The fully constructed PathType for the file.
         """
         if file_name[0] == "." and file_name.count(".") == 1:
             return (

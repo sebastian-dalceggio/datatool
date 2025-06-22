@@ -7,7 +7,7 @@ This directory contains the unit and integration tests for the `datatool` packag
 Below is a list of the primary test cases organized by the modules they cover:
 
 ### `tests/tools/test_files.py`
-
+-   `test_file_initialize_path_logic`: Tests the internal path initialization logic.
 -   `test_file_initialization_relative_path_str`: Verifies `File` initialization with a relative string path.
 -   `test_file_initialization_relative_pathtype`: Verifies `File` initialization with a relative `Path` object.
 -   `test_file_initialization_absolute_path_str`: Verifies `File` initialization with an absolute string path (local, cloud, or SSH).
@@ -19,7 +19,7 @@ Below is a list of the primary test cases organized by the modules they cover:
 -   `test_textfile_save_and_read`: Tests the `_save` and `_read` implementations specific to `TextFile`.
 -   `test_textfile_default_encoding`: Confirms `TextFile` uses UTF-8 as its default encoding.
 
-### `tests/tools/test_file_transfer_manager.py`
+### `tests/files/test_file_transfer_manager.py`
 
 -   `test_transfer_file_dispatches_correctly`: Tests that `FileTransferManager` dispatches to the correct strategy based on source and target path types (local, cloud, SSH).
 -   `test_transfer_file_with_delete_source`: Verifies that the source file is deleted after transfer when specified.
@@ -35,12 +35,26 @@ Below is a list of the primary test cases organized by the modules they cover:
 -   `test_cloud_to_ssh_strategy`: Tests the `CloudToSshStrategy` for transferring files from cloud storage to an SSH server.
 -   `test_ssh_to_ssh_strategy`: Tests the `SshToSshStrategy` for transferring files between two SSH servers.
 
-### `tests/tools/test_paths.py`
+### `tests/paths/test_paths.py`
 
 -   `test_get_path_from_str_local`: Tests `get_path_from_str` for local file paths.
 -   `test_get_path_from_str_cloud`: Tests `get_path_from_str` for various cloud file paths (S3, GS, Azure Blob).
--   `test_get_path_from_str_ssh`: Tests `get_path_from_str` for SSH paths.
 -   `test_get_path_from_str_empty`: Tests `get_path_from_str` with an empty string input.
+
+### `tests/paths/test_ssh_path.py`
+
+-   `test_ssh_path_initialization`: Tests `SshPath` object creation with various URL formats.
+-   `test_ssh_path_client_and_sftp_lazy_loading`: Verifies lazy loading and caching of SSH and SFTP clients.
+-   `test_ssh_path_parent_and_name`: Tests the `parent` and `name` properties for correct path manipulation.
+-   `test_ssh_path_is_absolute`: Confirms `SshPath` instances are always considered absolute.
+-   `test_ssh_path_exists`: Checks if the `exists` method correctly determines the presence of a remote path.
+-   `test_ssh_path_is_dir`: Verifies the `is_dir` method accurately identifies remote directories.
+-   `test_ssh_path_mkdir`: Tests the `mkdir` method, including parent directory creation logic.
+-   `test_ssh_path_read_write_bytes`: Tests reading and writing binary data to remote SSH files.
+-   `test_ssh_path_read_write_text`: Tests reading and writing text data to remote SSH files with specified encoding.
+-   `test_ssh_path_unlink`: Verifies the `unlink` method correctly removes remote files.
+-   `test_ssh_path_truediv`: Tests the `/` operator for joining SSH paths.
+-   `test_ssh_path_str_and_repr`: Confirms the string and representation methods provide correct and safe output.
 
 ### `tests/test_config.py`
 

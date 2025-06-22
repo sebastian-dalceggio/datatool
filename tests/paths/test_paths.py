@@ -1,10 +1,10 @@
-"""Tests for the datatool.tools.paths module."""
+"""Tests for the datatool.paths.paths module."""
 
 from pathlib import Path
 import pytest
 from cloudpathlib import S3Path, GSPath, AzureBlobPath
 
-from datatool.tools.paths import get_path_from_str
+from datatool.paths.paths import get_path_from_str
 
 
 def test_get_path_from_str_local():

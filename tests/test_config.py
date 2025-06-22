@@ -1,6 +1,7 @@
 """Tests for the datatool.config module."""
 
 from io import StringIO
+import logging
 
 import pytest
 import pendulum
@@ -70,11 +71,37 @@ def test_config_datetime_string_parsing(tmp_path):
 def test_config_type_errors(tmp_path):
     """Test Config raises TypeError for invalid input types."""
     storage_path = tmp_path / "storage"
-    with pytest.raises(TypeError, match="should be pendulum.DateTime or str"):
+    with pytest.raises(
+        TypeError, match="datetime should be pendulum.DateTime, str, or None"
+    ):
         Config(storage_parent_path=str(storage_path), datetime=123)
 
     with pytest.raises(TypeError, match="should be PathType or str"):
         Config(storage_parent_path=12345)
+
+
+def test_config_datetime_none(tmp_path):
+    """Test Config initialization with datetime=None uses current time."""
+    storage_path = tmp_path / "storage"
+    now = pendulum.now()
+    with pendulum.travel_to(now):
+        config = Config(storage_parent_path=str(storage_path), datetime=None)
+        assert config.datetime == now
+
+
+def test_config_with_log_file(tmp_path):
+    """Test Config logger setup with a log file path."""
+    log_file = tmp_path / "test.log"
+    config = Config(storage_parent_path=tmp_path, log_file_path=log_file)
+    assert config.logger is not _NULL_LOGGER
+    assert any(isinstance(h, logging.FileHandler) for h in config.logger.handlers)
+    file_handler = next(
+        h for h in config.logger.handlers if isinstance(h, logging.FileHandler)
+    )
+    assert file_handler.baseFilename == str(log_file)
+    config.logger.info("test message")
+    assert log_file.exists()
+    assert "test message" in log_file.read_text()
 
 
 def test_get_file_storage_path(mock_config):

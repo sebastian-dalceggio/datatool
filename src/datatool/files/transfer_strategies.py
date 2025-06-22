@@ -7,7 +7,7 @@ import shutil
 from cloudpathlib import CloudPath
 
 from datatool.types import PathType
-from datatool.tools.ssh_path import SshPath
+from datatool.paths.ssh_path import SshPath
 
 
 class TransferStrategy(ABC):
@@ -16,7 +16,11 @@ class TransferStrategy(ABC):
     @abstractmethod
     def transfer(self, source_path: PathType, target_path: PathType) -> None:
         """
-        Executes the file transfer from source_path to target_path.
+        Abstract method to execute a file transfer.
+
+        Args:
+            source_path: The source path of the file.
+            target_path: The target path for the file.
         """
         pass
 

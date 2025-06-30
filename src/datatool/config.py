@@ -83,6 +83,7 @@ class Config:
             self.logger = get_logger(
                 __name__, logging.INFO, log_file_path=log_file_path, stream=stream
             )
+            self.logger.propagate = False
         else:
             self.logger = _NULL_LOGGER
         if isinstance(storage_parent_path, PathType):

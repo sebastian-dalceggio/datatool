@@ -104,7 +104,7 @@ class FileTransferManager:
 
         # Ensure target parent directory exists for local paths.
         # SshPath.write_bytes already handles directory creation.
-        if isinstance(target_path, Path):
+        if self._get_base_path_type(target_path) is Path:
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
